@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id             String   @id @default(cuid())
+  slug           String   @unique        // "polymarket", "kaito" 등
+  name           String
+  description    String
+  iconUrl        String?
+  website        String?
+  chain          String?               // "Base", "Ethereum", ...
+  tgeDate        DateTime?             // Pre-TGE, Post-TGE 구분용
+  contextSummary String?               // 프로젝트 docs 요약(LLM에 넣을 컨텍스트)
+  posts          Post[]
+  scores         UserScore[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model User {
+  id          String   @id @default(cuid())
+  handle      String?            // X handle, Farcaster fid 등
+  wallet      String?            // 0x... address
+  avatarUrl   String?
+  displayName String?
+  posts       Post[]
+  scores      UserScore[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Post {
+  id          String      @id @default(cuid())
+  project     Project     @relation(fields: [projectId], references: [id])
+  projectId   String
+  author      User        @relation(fields: [authorId], references: [id])
+  authorId   String
+  source      String      // "x", "farcaster", "manual"
+  sourceId   String?      // X post id, cast hash 등
+  url         String?     // 원본 링크
+  rawContent  String      // 원문 텍스트
+  lang        String?     // "en", "ko" 등 추정 언어
+  postedAt    DateTime?
+  evaluation  Evaluation?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Evaluation {
+  id               String    @id @default(cuid())
+  post             Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId           String    @unique
+  informationScore Int
+  relevanceScore   Int
+  insightScore     Int
+  spamLikelihood   Float     // 0~1
+  finalLabel       EvalLabel
+  // 파생된 상벌 포인트
+  rewardPoints     Int       // +면 리워드, 0이면 없음
+  slashPoints      Int       // +면 슬래싱 양(벌점)
+  llmModel         String
+  llmRawJson       String    // 혹시 디버깅용으로 보관
+  createdAt        DateTime  @default(now())
+}
+
+enum EvalLabel {
+  GOOD
+  SHITPOSTING
+  BORDERLINE
+}
+
+model UserScore {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String
+  totalReward Int      @default(0)  // 누적 리워드
+  totalSlash  Int      @default(0)  // 누적 슬래싱(벌점)
+  netScore    Int      @default(0)  // totalReward - totalSlash
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, projectId])
+}
