@@ -37,13 +37,15 @@ async function importDummyData(jsonFilePath: string) {
     try {
       console.log(`\n[${i + 1}/${data.length}] 처리 중...`);
 
-      // 1. 프로젝트 조회
-      const project = await prisma.project.findUnique({
+      // 1. 프로젝트 조회 또는 생성
+      let project = await prisma.project.findUnique({
         where: { slug: item.projectSlug },
       });
 
       if (!project) {
         console.error(`  ❌ 프로젝트를 찾을 수 없습니다: ${item.projectSlug}`);
+        console.error(`  먼저 프로젝트 컨텍스트를 설정해주세요:`);
+        console.error(`  npx tsx scripts/setup-project-context.ts ${item.projectSlug} "<contextSummary>"`);
         errorCount++;
         continue;
       }
@@ -198,5 +200,6 @@ importDummyData(fullPath)
   .finally(async () => {
     await prisma.$disconnect();
   });
+
 
 
