@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { calculateAction } from "../lib/scoring";
-import type { EvalResult } from "@/lib/evaluatePost";
+import type { EvalResult } from "../lib/evaluatePost";
 
 const prisma = new PrismaClient();
 
