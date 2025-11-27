@@ -40,3 +40,4 @@ echo "다음 명령어로 더미 데이터를 임포트하세요:"
 echo "export DATABASE_URL=\"postgresql://postgres:password@localhost:5432/shitfilter?schema=public\""
 echo "npx tsx scripts/import-dummy-data.ts scripts/dummy_data.json"
 
+
