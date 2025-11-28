@@ -91,3 +91,53 @@ model UserScore {
 
   @@unique([userId, projectId])
 }
+
+// --- 새로 추가된 트위터/평가 전용 모델 ---
+
+model Tweet {
+  id          String   @id @default(cuid())
+  tweetId     String   @unique // 원본 트윗 ID
+  searchQuery String?
+  content     String
+  username    String
+  screenName  String?
+  profileImageUrl String?
+  postedAt    DateTime?
+  url         String?
+  
+  // 메트릭 (JSON으로 저장하거나 별도 필드)
+  metrics     Json?    // { likes: 10, retweets: 5 ... }
+  
+  tags        String[] // PostgreSQL은 String[] 지원
+  
+  evaluations TweetEvaluation[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TweetEvaluation {
+  id               String   @id @default(cuid())
+  tweet            Tweet    @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+  tweetId          String
+  
+  projectName      String?  // 어떤 프로젝트 관점인지 (옵션)
+  
+  finalLabel       String   // 'good' | 'shitposting' | 'borderline' (Enum 대신 String으로 유연하게)
+  informationScore Int      @default(0)
+  relevanceScore   Int      @default(0)
+  insightScore     Int      @default(0)
+  
+  reasons          String[] // 평가 이유 목록
+  
+  rewardPoints     Int      @default(0)
+  slashPoints      Int      @default(0)
+  
+  llmModel         String?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // 같은 트윗에 대해 같은 프로젝트로 중복 평가 방지
+  // (PostgreSQL에서는 @@unique([tweetId, projectName]) 처럼 쓸 수 있으나 projectName이 null일 수 있어 주의)
+}
